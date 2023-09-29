@@ -1,5 +1,4 @@
 import os
-# disable warnings
 import warnings
 
 import matplotlib.pyplot as plt
@@ -23,18 +22,17 @@ from corner import corner
 warnings.simplefilter("ignore")
 
 
-def post_proc(apers, observer, path2data=r'E:\tess\TIC21985258401\4299\EAST_V\Photometry', save_figs=False):
+def post_proc(apers, observer, path2data, is_master, scale, save_figs=False):
     # tess_object = 'Obj'  # set object name if TTF data not available
     # T0 = 2459851.3069  # transit start jd time
     # T1 = 2459851.3572  # transit end jd time
 
-    best_aperture = check_best_aperture(apers=apers, Path2Data=path2data, save_fig=save_figs)
+    best_aperture = check_best_aperture(apers=apers, path2_data=path2data, save_fig=save_figs)
     print(f'best aperture = {best_aperture}')
     min_bin_size = 3  # bin factor for lightcurve
     max_extinction = 0.35
 
-    observatory = 'kourovka0.4'
-    # observatory = 'kourovka0.6'
+    observatory = 'kourovka0.4' if is_master else 'kourovka0.6'
 
     tess_object = None
     T0 = None
@@ -76,28 +74,30 @@ def post_proc(apers, observer, path2data=r'E:\tess\TIC21985258401\4299\EAST_V\Ph
 
     ########################################################################
     # condition report
-    Condition_Report(tess_object, T0, T1, time_list, report_string)
+    # if is_master:
+    Condition_Report(tess_object, T0, T1, time_list, report_string, observatory)
 
     ########################################################################
     # plot raw data
-    plt.figure(figsize=(7, 7))
-    plt.plot(time_list['JD'], 20 - 2.5 * np.log10(flux))
-    plt.ylabel('instrumental magnitude', fontsize=6)
-    plt.title('Raw data', fontsize=8)
-    plt.axvspan(T0.jd, T1.jd, facecolor='k', alpha=0.2)
-    locs, labels = plt.xticks()
-    t = aTime(locs, format='jd')
-    x_ticks_labels = []
-    for x in t:
-        x_ticks_labels.append(str(x.iso).split(' ')[1].split('.')[0])
-    plt.xticks(locs, x_ticks_labels, rotation='vertical', fontsize=6)
-    plt.xlabel('transit_date-time_list (UTC), ' + time_list['DATE-OBS'][0].split('T')[0], fontsize=6)
-    plt.xlim(locs[0], locs[-2])
-    plt.tick_params(axis='both', labelsize=6, direction='in')
-    plt.gca().invert_yaxis()
-    plt.grid()
-    plt.show()
     if save_figs:
+        plt.figure(figsize=(7, 7))
+        plt.plot(time_list['JD'], 20 - 2.5 * np.log10(flux))
+        plt.ylabel('instrumental magnitude', fontsize=6)
+        plt.title('Raw data', fontsize=8)
+        plt.axvspan(T0.jd, T1.jd, facecolor='k', alpha=0.2)
+        locs, labels = plt.xticks()
+        t = aTime(locs, format='jd')
+        x_ticks_labels = []
+        for x in t:
+            x_ticks_labels.append(str(x.iso).split(' ')[1].split('.')[0])
+        plt.xticks(locs, x_ticks_labels, rotation='vertical', fontsize=6)
+        plt.xlabel('transit_date-time_list (UTC), ' + time_list['DATE-OBS'][0].split('T')[0], fontsize=6)
+        plt.xlim(locs[0], locs[-2])
+        plt.tick_params(axis='both', labelsize=6, direction='in')
+        plt.gca().invert_yaxis()
+        plt.grid()
+        plt.show()
+
         plt.savefig(save_string_for_additions + '_Raw data.pdf')
 
     ########################################################################
@@ -116,19 +116,19 @@ def post_proc(apers, observer, path2data=r'E:\tess\TIC21985258401\4299\EAST_V\Ph
     ########################################################################
     # check result
     # plot std vs mag
-    M = 20. - 2.5 * np.log10(Flux_Corr)
-    S = np.nanstd(M, axis=0)
-    plt.plot(catalog['B'], S, 'b.', label='exluded')
-    plt.plot(catalog['B'][Catalog_Corr['ID']], S[Catalog_Corr['ID']], 'g.', label='in ensemble')
-    plt.plot(catalog['B'][0], S[0], 'r*', label='target')
-    plt.ylabel('std(mag)', fontsize=6)
-    plt.xlabel('GAIA Bmag', fontsize=6)
-    plt.tick_params(axis='both', labelsize=6, direction='in')
-    plt.legend()
-    plt.title('STD vs Mag')
-    plt.grid()
-    plt.show()
     if save_figs:
+        M = 20. - 2.5 * np.log10(Flux_Corr)
+        S = np.nanstd(M, axis=0)
+        plt.plot(catalog['B'], S, 'b.', label='exluded')
+        plt.plot(catalog['B'][Catalog_Corr['ID']], S[Catalog_Corr['ID']], 'g.', label='in ensemble')
+        plt.plot(catalog['B'][0], S[0], 'r*', label='target')
+        plt.ylabel('std(mag)', fontsize=6)
+        plt.xlabel('GAIA Bmag', fontsize=6)
+        plt.tick_params(axis='both', labelsize=6, direction='in')
+        plt.legend()
+        plt.title('STD vs Mag')
+        plt.grid()
+        plt.show()
         plt.savefig(save_string_for_additions + '_std vs mag.pdf')
 
     # plot reference stars
@@ -152,25 +152,31 @@ def post_proc(apers, observer, path2data=r'E:\tess\TIC21985258401\4299\EAST_V\Ph
                  label='Ref#' + str(Val) + ', BP=' + '{:.2f}'.format(catalog['B'][Val]) +
                        ', STD = ' + '{:.4f}'.format(np.std(S_Flux[:, i])))
 
-    plt.ylabel('Normalized flux', fontsize=6)
-    plt.axvspan(T0.jd, T1.jd, facecolor='k', alpha=0.2)
-    plt.xticks(locs[0:-1], x_ticks_labels[0:-1], rotation='vertical', fontsize=6)
-    plt.xlabel('transit_date-time_list (UTC), ' + time_list['DATE-OBS'][0].split('T')[0], fontsize=6)
-    plt.tick_params(axis='both', labelsize=6, direction='in')
-    plt.gcf().set_size_inches(10, 4)
-    plt.gca().set_position([0.1, 0.15, 0.65, 0.75])
-    plt.legend(fontsize=6, bbox_to_anchor=(1.01, 1.))
-    plt.title('Best reference stars')
-    plt.grid()
-    plt.show()
     if save_figs:
+        plt.ylabel('Normalized flux', fontsize=6)
+        plt.axvspan(T0.jd, T1.jd, facecolor='k', alpha=0.2)
+        locs, labels = plt.xticks()
+        x_ticks_labels = []
+        t = aTime(locs, format='jd')
+        for x in t:
+            x_ticks_labels.append(str(x.iso).split(' ')[1].split('.')[0])
+        plt.xticks(locs[0:-1], x_ticks_labels[0:-1], rotation='vertical', fontsize=6)
+        plt.xlabel('transit_date-time_list (UTC), ' + time_list['DATE-OBS'][0].split('T')[0], fontsize=6)
+        plt.tick_params(axis='both', labelsize=6, direction='in')
+        plt.gcf().set_size_inches(10, 4)
+        plt.gca().set_position([0.1, 0.15, 0.65, 0.75])
+        plt.legend(fontsize=6, bbox_to_anchor=(1.01, 1.))
+        plt.title('Best reference stars')
+        plt.grid()
+        plt.show()
+
         plt.savefig(save_string_for_additions + '_Best reference stars.pdf')
 
     ########################################################################
     # start reports
     Title = tess_object
     Title += '\n'
-    Title += 'Kourovka0.4, ' + time_list['DATE-OBS'][0].split('T')[0]
+    Title += f'{observatory}, ' + time_list['DATE-OBS'][0].split('T')[0]
     Title += ', filter=' + fil
     Title += ', Extime=' + '{:.1f}'.format(exp)
     Title += '\n'
@@ -243,8 +249,8 @@ def post_proc(apers, observer, path2data=r'E:\tess\TIC21985258401\4299\EAST_V\Ph
                                    eccentricity, argument_of_periastron, 1, kind=14)
     t23 = orbits_py.d_from_pkaiews(period, radius_ratio, smaxis, inclination,
                                    eccentricity, argument_of_periastron, 1, kind=23)
-    # print('t14, t23:', t14, t23)
-
+    t23 = np.float32(t23)
+    # print('t23:', t23, 'type', type(t23))
     df = transit_analysis.posterior_samples()
     corner(df.posterior).savefig(report_string + '_corner_posterior.pdf')
     try:
@@ -253,7 +259,6 @@ def post_proc(apers, observer, path2data=r'E:\tess\TIC21985258401\4299\EAST_V\Ph
         pass
     ########################################################################
     # BINNING
-
 
     actual_bin_size = int(len(Target_Report_Tbl['BJD']) / 10)
     if actual_bin_size > 20:
@@ -266,17 +271,24 @@ def post_proc(apers, observer, path2data=r'E:\tess\TIC21985258401\4299\EAST_V\Ph
                                                   aggregate_func=np.nanmean)
         time_series_binned_std = aggregate_downsample(time_series=time_series, time_bin_size=actual_bin_size * u.min,
                                                       aggregate_func=np.nanstd)
+        if not np.isnan(t23):  # если транзит v образный, то t23 не существует, значит глубину надо считать иначе
+            indxs = np.where((tc + t23 * 0.5 > time_series_binned.time_bin_start.jd) &
+                             (time_series_binned.time_bin_start.jd > tc - t23 * 0.5))[0]
+        else:
+            indxs = np.where((tc + t14 * 0.05 > time_series_binned.time_bin_start.jd) &
+                             (time_series_binned.time_bin_start.jd > tc - t14 * 0.05))[0]
+        transit_flux_depth = time_series_binned['flux'][indxs]
 
-        transit_flux_depth = time_series_binned['flux'][
-            np.where((tc + t23 * 0.5 > time_series_binned.time_bin_start.jd) &
-                     (time_series_binned.time_bin_start.jd > tc - t23 * 0.5))[0]]
     else:
-        transit_flux_depth = Target_Report_Tbl['Rel_Flux_Object'][np.where((tc + t23 * 0.5 > Target_Report_Tbl['BJD']) &
-                                                                           (Target_Report_Tbl['BJD'] > tc - t23 * 0.5))[
-            0]]
+        if t23 is not np.nan:
+            indxs = np.where((tc + t23 * 0.5 > Target_Report_Tbl['BJD']) &
+                             (Target_Report_Tbl['BJD'] > tc - t23 * 0.5))[0]
+        else:
+            indxs = np.where((tc + t14 * 0.05 > Target_Report_Tbl['BJD']) &
+                             (Target_Report_Tbl['BJD'] > tc - t14 * 0.05))[0]
+        transit_flux_depth = Target_Report_Tbl['Rel_Flux_Object'][indxs]
         time_series_binned = None
         time_series_binned_std = None
-        # fixme
 
     transit_depth_sigma_clip = sigma_clipped_stats(transit_flux_depth, sigma=3,
                                                    cenfunc=np.nanmedian, stdfunc=np.nanstd, axis=0)
@@ -305,8 +317,9 @@ def post_proc(apers, observer, path2data=r'E:\tess\TIC21985258401\4299\EAST_V\Ph
     # по изначальной информации
     axs[0].axhline(transit_depth_median, linewidth=0.5, color='r', linestyle='dashed')  # глубина транзита
     draw_my_annotate(axs[0], tc - t14 * 0.5 - ZERO)  # начало транзита по наблюдению
-    draw_my_annotate(axs[0], tc - t23 * 0.5 - ZERO)  # дно1
-    draw_my_annotate(axs[0], tc + t23 * 0.5 - ZERO)  # дно2
+    if t23 is not np.nan:
+        draw_my_annotate(axs[0], tc - t23 * 0.5 - ZERO)  # дно1
+        draw_my_annotate(axs[0], tc + t23 * 0.5 - ZERO)  # дно2
     draw_my_annotate(axs[0], tc + t14 * 0.5 - ZERO)  # конец транзита по наблюдению
     axs[0].legend(loc=0, fontsize=6)
     axs[0].set_ylabel('Normalized flux', fontsize=6)
@@ -360,6 +373,8 @@ def post_proc(apers, observer, path2data=r'E:\tess\TIC21985258401\4299\EAST_V\Ph
     # plot errors
     pos = [0.125, 0.05, 0.8, 0.23]
     axs[2].set_position(pos)
+    M = 20. - 2.5 * np.log10(Flux_Corr)
+    S = np.nanstd(M, axis=0)
     axs[2].plot(catalog['B'], S, 'b.', label='exluded')
     axs[2].plot(catalog['B'][Catalog_Corr['ID']], S[Catalog_Corr['ID']], 'g.',
                 label='in ensemble')
@@ -411,8 +426,8 @@ def post_proc(apers, observer, path2data=r'E:\tess\TIC21985258401\4299\EAST_V\Ph
     ax.set_title(str(k) + ' nearest stars, sorted by distance from target', loc='left', fontsize=6)
     ax.grid()
     plt.show()
-    if save_figs:
-        plt.savefig(report_string + '_NEBs_checking.pdf')
+    # if save_figs:
+    plt.savefig(report_string + '_NEBs_checking.pdf')
 
     # report
     k = 0
@@ -429,18 +444,29 @@ def post_proc(apers, observer, path2data=r'E:\tess\TIC21985258401\4299\EAST_V\Ph
     ascii.write(Target_Report_Tbl, report_string + '_lightcurve.dat',
                 overwrite=True, delimiter='\t', fast_writer=False,
                 format='commented_header')
-
+    # scale = 3600 * np.sqrt(Header['CD1_1'] ** 2 + header['CD1_2'] ** 2)
     FS = np.argmax(catalog['R'])
     dt = time_list["DATE-OBS"][0].split("T")[0]
     dtr = dt.replace("-", "")
-    raper = np.round(best_aperture * 1.85, 1)
-    mean_fwhm = np.round(np.mean(time_list["SEXFWHM"]) * 1.85, 1)
+    raper = np.round(best_aperture * scale, 1)
+    mean_fwhm = np.round(np.mean(time_list["SEXFWHM"]) * scale, 1)
     transit = what_transit(Target_Report_Tbl['JD'], T0.jd, T1.jd)
     eps = 5
-    deltaT = (T0.tdb.jd - (tc - t14 * 0.5)) / 24 / 60
-    Target_Report_Txt = f'''MASTER-Ural, 2x0.4m, 2xApogeeAltaU16m cameras, observed a {tess_object} at {dt} in {fil} filter with exptime={np.round(exp, 1)} s. 
+    deltaT = np.round((T0.tdb.jd - (tc - t14 * 0.5)) / 24 / 60, 0)
+    inTime = f"{np.abs(deltaT)} min. "
+    # {"early" if  else "late"}
 
-Pixel scale = 1.85"/pix, mean FWHM of PSF is {mean_fwhm}". Photometric aperture radius is {best_aperture} pix or {raper}".
+    if np.abs(deltaT) < eps:
+        inTime = 'approx on time'
+    elif deltaT >= eps:
+        inTime = f"{np.abs(deltaT)} min. early"
+    elif deltaT <= -eps:
+        inTime = f"{np.abs(deltaT)} min. late"
+
+    Target_Report_Txt = \
+        f'''{"MASTER - Ural, 2x0.4m, 2xApogeeAltaU16m" if is_master else "RoboPhot, 0.6m, MicroLine ML4240"} cameras, observed a {tess_object} at {dt} in {fil} filter with exptime={np.round(exp, 1)} s.
+
+Pixel scale = {np.round(scale, 2)}"/pix, mean FWHM of PSF is {mean_fwhm}". Photometric aperture radius is {best_aperture} pix or {raper}".
 Duration of time series is {np.round((time_list["JD"][-1] - time_list["JD"][0]) * 24 * 60, 0)} and number of frames is {len(time_list["JD"])}.
 
 Faintest star in FoV is #{catalog["ID"][FS]}. It is {np.round(catalog["R"][FS] - catalog["R"][0], 1)} mag(GAIA RP) weaker than the target.
@@ -456,9 +482,9 @@ Model parameters:
 * Orbital eccentricity: {np.round(eccentricity, 4)}
 * Argument of periastron: {np.round(argument_of_periastron, 4)}
 
-{tess_object} at UT{dtr} from Kourovka Observatory 0.4m (x2) in {fil}.
+{tess_object} at UT{dtr} from Kourovka Observatory {"0.4m (x2)" if is_master else "0.6m"} in {fil}.
 
-Chazov Nikita/Kourovka Observatory 0.4m (x2) observed {transit} on {dtr} in {fil} and detected a {np.abs(np.round(deltaT, 0))} min. {"early" if deltaT < eps else "late"} {depth_ppt} using {raper}" target aperture. 
+Nikita Chazov/Kourovka Observatory {"0.4m (x2)" if is_master else "0.6m"} observed {transit} on {dtr} in {fil} and detected a {inTime} {depth_ppt}ppt using {raper}" target aperture. 
 1. Aperture radius = {raper}"
 2. Typical FWHM = {mean_fwhm}"
 3. Predicted Tc = {np.round((T1.tdb.jd + T0.tdb.jd) / 2 - 2450000, 4)}

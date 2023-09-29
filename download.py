@@ -33,7 +33,7 @@ def create_entry_url(target: str):
     return url.format()
 
 
-def obs_query(target: str, path2save=r'E:/tess/'):
+def obs_query_from_master(target: str, path2save=r'E:/tess/master/'):
     target = ''.join(['TIC', *target_to_tic_number(target)])
     url = create_entry_url(target)
     ssn = requests.session()

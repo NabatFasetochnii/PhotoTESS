@@ -4,7 +4,21 @@ from scipy import stats
 import glob
 import gzip
 import os
+from astropy import units as u
+from astropy.coordinates import SkyCoord, EarthLocation
+from astropy.time import Time, TimeDelta
+from astropy.utils import iers
+import warnings
+warnings.simplefilter("ignore")
+iers.conf.auto_download = False
 
+
+def get_fits_list(path2data):
+    file_list = []
+    for f in os.listdir(path2data):
+        if f.count('.fits') or f.count('.fts') or f.count('.fit'):
+            file_list.append(path2data + '/' + f)
+    return file_list
 
 
 def get_com(Data, Cat, Bbox):
@@ -18,6 +32,27 @@ def get_com(Data, Cat, Bbox):
                                    (5, 5), mode='partial').data.max())
     Cat.add_column(new_Max, name='Max')
     return Cat
+
+
+def Get_Times(Header, is_master):
+    Exp = TimeDelta(Header['EXPTIME'], format='sec')
+    t = Time(Header['DATE-OBS'], format='fits')
+    t = t + Exp / 2.
+
+    Obj = SkyCoord([Header['ALPHA'] + ' ' + Header['DELTA']],
+                   unit=(u.hourangle, u.deg), frame='icrs')
+
+    Site = EarthLocation.from_geodetic(lon=Header['LONGITUD'] if is_master else Header['LONGDEG'],
+                                       lat=Header['LATITUDE'] if is_master else Header['LATDEG'],
+                                       height=Header['ALTITUDE'])
+
+    helio = t.light_travel_time(Obj, 'heliocentric', location=Site)
+    hjd = t + helio
+
+    bary = t.light_travel_time(Obj, location=Site)
+    bjd = t + bary
+
+    return t, hjd.jd[0], bjd.jd[0]
 
 
 def unzip(path2data, is_del_zips=True):

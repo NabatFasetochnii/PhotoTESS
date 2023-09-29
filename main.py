@@ -1,17 +1,20 @@
 from Core import photometry
-from download import obs_query
+from download import obs_query_from_master
 from Postproc import Post_Proc
 
 observer = 'chazov'
 # observer = 'sysolina'
 # observer = 'krushinsky'
 
-# paths = obs_query('TIC417129824_01')
+paths = obs_query_from_master('TIC312991501_01')
 # print('paths - ', paths)
-# paths = [r'G:\tess\TIC14278542101\4280\EAST_V', r'G:\tess\TIC14278542101\4280\WEST_R']
-paths = [r'E:\tess\TIC41712982401\4302\WEST_R']
+# paths = [r'E:\tess\master\TIC6885090801\4332\EAST_I',
+#          r'E:\tess\master\TIC6885090801\4332\WEST_B']
+# paths = [r'E:\tess\robophot\2023_09_08_TIC233047097_01\i']
 
 for path in paths:
-    photometry(path2data=path, observer=observer)
-
-# Post_Proc.post_proc(apers=[3, 4, 5], observer=observer, path2data=r'E:\tess\TIC41712982401\4302\EAST_V\Photometry')
+    photometry(path2data=path, RAper=[3, 4, 5, 6, 7])
+# photometry(r'E:\tess\TIC32681580411\4306\WEST_R', observer=observer)
+#     Post_Proc.post_proc(apers=[3, 4, 5, 6, 7], observer=observer,
+#                         path2data=path,
+#                         is_master=True, scale=1.85)

@@ -3,13 +3,13 @@ import numpy as np
 from astropy.time import Time as aTime
 
 
-def Condition_Report(Object, T0, T1, Time, Path2Save):
+def Condition_Report(Object, T0, T1, Time, Path2Save, scope):
 
     plt.switch_backend('pdf')  # для фикса какой-то тупой ошибки в нарнии pyplot
     fig, axs = plt.subplots(7, 1, sharex=True, figsize=(6, 7), dpi=125)
     Title = Object
     Title += '\n'
-    Title += 'Kourovka0.4, ' + Time['DATE-OBS'][0].split('T')[0]
+    Title += f'{scope}, ' + Time['DATE-OBS'][0].split('T')[0]
     Title += ', filter=' + Time['FILTER'][0]
     Title += '\n'
     Title += 'Observation start='+Time['DATE-OBS'][0].split('.')[0]
@@ -27,9 +27,6 @@ def Condition_Report(Object, T0, T1, Time, Path2Save):
     axs[2].plot(Time['JD'], Time['EXTINCT'], 'b.')
     axs[2].set_ylabel('extinction (mag)', fontsize=6)
 
-##    axs[3].plot(Time['JD'], Time['ZEROPOI'], 'b.')
-##    axs[3].set_ylabel('zero point (mag)', fontsize=6)
-
     axs[3].plot(Time['JD'], Time['SEXFWHM']*1.85, 'r.')
     axs[3].set_ylabel('FWHM (arcsec)', fontsize=6)
 
@@ -41,7 +38,7 @@ def Condition_Report(Object, T0, T1, Time, Path2Save):
 
     axs[6].plot(Time['JD'], Time['X']-np.mean(Time['X']), 'r.', label='X Shift')
     axs[6].plot(Time['JD'], Time['Y']-np.mean(Time['Y']), 'b.', label='Y Shift')
-    axs[6].legend(loc = 0, fontsize=6)
+    axs[6].legend(loc=0, fontsize=6)
     axs[6].set_ylabel('shift (pix)', fontsize=6)
 
     locs, labels = plt.xticks()
