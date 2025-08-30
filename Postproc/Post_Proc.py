@@ -233,6 +233,7 @@ def post_proc(apers, observer, path2data, is_master, scale, save_figs=False):
     max_prob = np.argmax(transit_analysis.sampler.flatlnprobability)  # индекс в цепи с наибольшей вероятностью
     popt = samples[max_prob]  # элемент цепи с наибольшей вероятностью
     model_flux = transit_analysis.flux_model(popt)  # модельный поток
+    transit_analysis.plot_light_curves('mcmc').savefig(report_string + '_lightcurve_model_plot.pdf')
 
     # print(popt)
 
@@ -297,10 +298,11 @@ def post_proc(apers, observer, path2data, is_master, scale, save_figs=False):
     ########################################################################
     # start plots
     print("start plots")
-    fig, axs = plt.subplots(3, 1, figsize=(6, 7), dpi=125)
+    fig, axs = plt.subplots(2, 1, figsize=(6, 7), dpi=125)
     fig.suptitle(Title, fontsize=8)
 
     # flux vs JD
+    # [left, bottom, width, height]
     pos = [0.125, 0.73, 0.8, 0.15]
     axs[0].set_position(pos)
     axs[0].plot(Target_Report_Tbl['BJD'] - ZERO, model_flux, 'y-', markersize=3, zorder=4,
@@ -313,7 +315,7 @@ def post_proc(apers, observer, path2data, is_master, scale, save_figs=False):
         axs[0].errorbar(time_series_binned.time_bin_start.jd - ZERO, time_series_binned['flux'],
                         time_series_binned_std['flux'], fmt='g.', markersize=9, zorder=4,
                         label=f'x{actual_bin_size} binned' + r', 1$\sigma$ errorbar')  # рисуем бины
-    axs[0].axvspan(T0.tdb.jd - ZERO, T1.tdb.jd - ZERO, facecolor='k', alpha=0.2)  # продолжительность транзита
+    # axs[0].axvspan(T0.tdb.jd - ZERO, T1.tdb.jd - ZERO, facecolor='k', alpha=0.2)  # продолжительность транзита
     # по изначальной информации
     axs[0].axhline(transit_depth_median, linewidth=0.5, color='r', linestyle='dashed')  # глубина транзита
     draw_my_annotate(axs[0], tc - t14 * 0.5 - ZERO)  # начало транзита по наблюдению
@@ -346,6 +348,7 @@ def post_proc(apers, observer, path2data, is_master, scale, save_figs=False):
 
     # plot reference stars
     pos = [0.125, 0.35, 0.53, 0.31]
+    # pos = [0.125, 0.35, 0.53, 0.31]
     axs[1].set_position(pos)
     axs[1].plot(time_list['BJD'] - ZERO, Flux_Corr[:, 0] / np.median(Flux_Corr[:, 0]), 'r*',
                 label='tess_object, BP=' + '{:.2f}'.format(catalog['B'][0]) +
@@ -357,7 +360,7 @@ def post_proc(apers, observer, path2data, is_master, scale, save_figs=False):
                           r', $\sigma$=' + '{:.4f}'.format(np.std(S_Flux[:, i])))
     axs[1].legend(fontsize=6, bbox_to_anchor=(1.005, 1.))
     axs[1].set_ylabel('Normalized flux', fontsize=5)
-    axs[1].axvspan(T0.tdb.jd - ZERO, T1.tdb.jd - ZERO, facecolor='k', alpha=0.2)
+    # axs[1].axvspan(T0.tdb.jd - ZERO, T1.tdb.jd - ZERO, facecolor='k', alpha=0.2)
     locs = axs[1].get_xticks()
     t = aTime(locs, format='jd')
     x_ticks_labels = []
@@ -370,25 +373,26 @@ def post_proc(apers, observer, path2data, is_master, scale, save_figs=False):
     axs[1].set_title('Reference stars', loc='left', fontsize=6)
     axs[1].grid()
 
-    # plot errors
-    pos = [0.125, 0.05, 0.8, 0.23]
-    axs[2].set_position(pos)
-    M = 20. - 2.5 * np.log10(Flux_Corr)
-    S = np.nanstd(M, axis=0)
-    axs[2].plot(catalog['B'], S, 'b.', label='exluded')
-    axs[2].plot(catalog['B'][Catalog_Corr['ID']], S[Catalog_Corr['ID']], 'g.',
-                label='in ensemble')
-    axs[2].plot(catalog['B'][0], S[0], 'r*', label='tess_object')
-    axs[2].set_ylabel('std(mag)', fontsize=6)
-    axs[2].set_xlabel('GAIA Bmag', fontsize=6)
-    axs[2].tick_params(axis='both', labelsize=6, direction='in')
-    axs[2].legend(loc=2, fontsize=6)
-    axs[2].set_title('std vs magnitudes', loc='left', fontsize=6)
-    axs[2].set_ylim(0, 0.05)
-    axs[2].grid()
+    # # plot errors
+    # pos = [0.125, 0.05, 0.8, 0.23]
+    # axs[2].set_position(pos)
+    # M = 20. - 2.5 * np.log10(Flux_Corr)
+    # S = np.nanstd(M, axis=0)
+    # axs[2].plot(catalog['B'], S, 'b.', label='exluded')
+    # axs[2].plot(catalog['B'][Catalog_Corr['ID']], S[Catalog_Corr['ID']], 'g.',
+    #             label='in ensemble')
+    # axs[2].plot(catalog['B'][0], S[0], 'r*', label='tess_object')
+    # axs[2].set_ylabel('std(mag)', fontsize=6)
+    # axs[2].set_xlabel('GAIA Bmag', fontsize=6)
+    # axs[2].tick_params(axis='both', labelsize=6, direction='in')
+    # axs[2].legend(loc=2, fontsize=6)
+    # axs[2].set_title('std vs magnitudes', loc='left', fontsize=6)
+    # axs[2].set_ylim(0, 0.05)
+    # axs[2].grid()
 
     # plt.show()
     plt.savefig(report_string + '_report.pdf')
+    plt.savefig(report_string + '_report.eps')
 
     ########################################################################
     # NEB

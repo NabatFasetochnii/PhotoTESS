@@ -18,7 +18,10 @@ def Condition_Report(Object, T0, T1, Time, Path2Save, scope):
 
     fig.suptitle(Title, fontsize=8)
     pos = [0.125, 0.79, 0.8, 0.1]
-    axs[0].plot(Time['JD'], Time['AIRMASS'], 'b.')
+    try:
+        axs[0].plot(Time['JD'], Time['AIRMASS'], 'b.')
+    except:
+        pass
     axs[0].set_ylabel('airmass', fontsize=6)
 
     axs[1].plot(Time['JD'], Time['Sky'], 'r.')

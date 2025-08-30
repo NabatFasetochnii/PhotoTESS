@@ -94,8 +94,8 @@ def target_to_tic_number(target: str):
 
 def draw_my_annotate(ax, t):
     ax.annotate('{:.3f}'.format(t), xy=(t, 1.006), xytext=(t, 0.973), va='center', ha='center', color='y',
-                arrowprops={'width': 0.1, 'headwidth': 0, 'linestyle': '-', 'color': 'y'},
-                fontsize=4, zorder=5)
+                arrowprops={'width': 0.9, 'headwidth': 0, 'linestyle': '-', 'color': 'y'},
+                fontsize=12, zorder=5)
 
 
 def what_transit(time_series, t0, t1):
